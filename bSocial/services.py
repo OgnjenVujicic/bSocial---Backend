@@ -60,9 +60,15 @@ def get_commments(post_id):
 
 def get_feed(current_user,page):
     try:
-        followers_ids = Followers.query.with_entities(Followers.followed_id.label('id')).filter_by(follow_id=current_user.id)
-        ids_incuding_own = followers_ids.union(User.query.with_entities(User.id).filter_by(id=current_user.id))
-        posts = Post.query.filter(Post.user_id.in_(ids_incuding_own)).order_by(Post.date_time.desc()).paginate(page=page,per_page=3)
+        followers_ids = Followers.query.with_entities(Followers.followed_id.label('id'))\
+            .filter_by(follow_id=current_user.id)
+            
+        ids_incuding_own = followers_ids.union(User.query.with_entities(User.id)\
+            .filter_by(id=current_user.id))
+
+        posts = Post.query.filter(Post.user_id.in_(ids_incuding_own))\
+            .order_by(Post.date_time.desc())\
+            .paginate(page=page,per_page=3)
         return jsonify(total=posts.total,total_pages=posts.pages, page=page, next_page=posts.next_num, prev_page=posts.prev_num, posts_list=[i.serialize for i in posts.items])
     except exc.SQLAlchemyError as e:
         return except_msg(e)
