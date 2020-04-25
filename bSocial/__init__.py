@@ -6,6 +6,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '4321628bb0b13ce0c676dfjf280ba245'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['JSON_SORT_KEYS'] = False
 db = SQLAlchemy(app)
 argon2 = Argon2(app)
 CORS(app)
