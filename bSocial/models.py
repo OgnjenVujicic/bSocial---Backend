@@ -12,6 +12,7 @@ class User(db.Model):
     password = db.Column(db.String(60), nullable=False)
     posts = db.relationship('Post', backref='author', lazy=True)
 
+    @property
     def serialize(self):
         return {"id": self.id,
                 "first_name": self.first_name,
@@ -19,6 +20,10 @@ class User(db.Model):
                 "username": self.username,
                 "email": self.email,
                 "image_file": self.image_file}
+
+    @property
+    def serialize_posts(self):
+       return [ item.serialize for item in self.posts]
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.image_file}')"
@@ -32,12 +37,17 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     comments = db.relationship('Comment', backref='post', lazy=True)
 
+    @property
     def serialize(self):
         return {"id": self.id,
                 "title": self.title,
                 "date_time": self.date_time,
                 "content": self.content,
                 "user_id": self.user_id}
+
+    @property
+    def serialize_comments(self):
+       return [ item.serialize for item in self.comments]
 
     def __repr__(self):
         return f"Post('{self.title}', '{self.date_time}')"
@@ -48,6 +58,7 @@ class Comment(db.Model):
     content = db.Column(db.Text, nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
 
+    @property
     def serialize(self):
         return {"id": self.id,
                 "date_time": self.date_time,
@@ -61,8 +72,9 @@ class Comment(db.Model):
 class Followers(db.Model):
     __table_args__ = (db.UniqueConstraint('follow_id', 'followed_id'), )
     id = db.Column(db.Integer, primary_key=True)
-    follow_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    follow_id = db.Column(db.Integer, nullable=False)
     followed_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    followed_user = db.relationship('User', lazy=True)
 
     def __repr__(self):
-        return f"Followers('{self.subject}', '{self.target}')"
+        return f"Followers('{self.follow_id}', '{self.followed_id}')"

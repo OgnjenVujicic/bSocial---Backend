@@ -93,3 +93,17 @@ def follow(current_user):
         return data_invalid()
     return service.insert_follower(data, current_user)
 
+
+@app.route("/comments")
+@check_for_token
+def comments(current_user):
+    post_id = request.args.get('post_id')
+    if not post_id:
+        return data_invalid()
+    return service.get_commments(post_id)
+
+
+@app.route("/feed")
+@check_for_token
+def feed(current_user):
+    return service.get_feed(current_user)

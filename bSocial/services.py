@@ -18,7 +18,7 @@ def insert_user(data):
         return jsonify({"error": "email already exists"}), 400
     hashed_pass = argon2.generate_password_hash(data['password'])
     user = User(first_name=data['first_name'], last_name=data['last_name'],
-                username=data['username'], email=data['email'], password=hashed_pass)                
+                username=data['username'], email=data['email'], password=hashed_pass)              
     try:   
         save_changes(user)
         return jsonify({'message': 'registered successfully'})
@@ -29,7 +29,7 @@ def insert_post(data, current_user):
     try:
         post = Post(title=data['title'], content=data['content'], author=current_user)
         save_changes(post)
-        return post.serialize()
+        return post.serialize
     except exc.SQLAlchemyError as e:
         return except_msg(e)
 
@@ -38,7 +38,7 @@ def insert_comment(data, current_user):
     try:
         comment = Comment(post_id=data['post_id'],content=data['content'])
         save_changes(comment)
-        return comment.serialize()
+        return comment.serialize
     except exc.SQLAlchemyError as e:
         return except_msg(e)
 
@@ -48,5 +48,21 @@ def insert_follower(data, current_user):
         fol = Followers(followed_id=data['user_id'],follow_id=current_user.id)
         save_changes(fol)
         return jsonify({'message': 'Followed successfully'})
+    except exc.SQLAlchemyError as e:
+        return except_msg(e)
+
+def get_commments(post_id):
+    try:
+        comments = Comment.query.filter_by(post_id=post_id).order_by(Comment.date_time).all()
+        return jsonify(comments_list=[i.serialize for i in comments])
+    except exc.SQLAlchemyError as e:
+        return except_msg(e)
+
+def get_feed(current_user):
+    try:
+        followers_ids = Followers.query.with_entities(Followers.followed_id.label('id')).filter_by(follow_id=current_user.id)
+        ids_incuding_own = followers_ids.union(User.query.with_entities(User.id).filter_by(id=current_user.id))
+        posts = Post.query.filter(Post.user_id.in_(ids_incuding_own)).order_by(Post.date_time.desc()).all()
+        return jsonify(posts_list=[i.serialize for i in posts])
     except exc.SQLAlchemyError as e:
         return except_msg(e)
