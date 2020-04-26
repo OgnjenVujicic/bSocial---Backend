@@ -108,3 +108,9 @@ def comments(current_user):
 def feed(current_user):
     page = request.args.get('page',1,type=int)
     return service.get_feed(current_user,page)
+
+
+@app.route("/comments/notifications")
+@check_for_token
+def comments_notifications(current_user):
+    return service.get_comments_notifications(current_user)

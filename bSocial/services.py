@@ -1,8 +1,9 @@
-from flask import jsonify
-import datetime
+from flask import jsonify, json
+from datetime import datetime
 from bSocial import app, db, argon2
 from bSocial.models import User, Post, Comment, Followers
 from sqlalchemy import exc
+from bSocial.kafka_service import connect_kafka_producer, publish_message,consume_messages
 
 
 def except_msg(e):
@@ -38,6 +39,12 @@ def insert_comment(data, current_user):
     try:
         comment = Comment(post_id=data['post_id'],content=data['content'])
         save_changes(comment)
+        kafka_message={'sender_username' : current_user.username, 'sender_email' : current_user.email, 
+        'sender_id' : current_user.id, 'timestamp' : datetime.utcnow(), 'post_id' : comment.post_id,
+        'comment_id' : comment.id, 'comment_content' : comment.content}
+        mess_json = json.dumps(kafka_message)
+        p = connect_kafka_producer()
+        publish_message(p,'comments','comment',mess_json)
         return comment.serialize
     except exc.SQLAlchemyError as e:
         return except_msg(e)
@@ -69,6 +76,14 @@ def get_feed(current_user,page):
         posts = Post.query.filter(Post.user_id.in_(ids_incuding_own))\
             .order_by(Post.date_time.desc())\
             .paginate(page=page,per_page=3)
-        return jsonify(total=posts.total,total_pages=posts.pages, page=page, next_page=posts.next_num, prev_page=posts.prev_num, posts_list=[i.serialize for i in posts.items])
+
+        return jsonify(total=posts.total,total_pages=posts.pages, 
+        page=page, next_page=posts.next_num, prev_page=posts.prev_num, 
+        posts_list=[i.serialize for i in posts.items])
+
     except exc.SQLAlchemyError as e:
         return except_msg(e)
+
+def get_comments_notifications(current_user):
+    return consume_messages()
+    
