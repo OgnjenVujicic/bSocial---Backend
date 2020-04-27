@@ -2,14 +2,17 @@ from confluent_kafka import Producer,Consumer,KafkaError
 from flask import json,jsonify
 
 def publish_message(producer_instance, topic_name, key, value):
+    if producer_instance is None:
+        print("No producer")
+        return
     try:
         key_bytes = bytes(key, encoding='utf-8')
         value_bytes = bytes(value, encoding='utf-8')
         producer_instance.produce(topic_name, key=key_bytes, value=value_bytes)
-        producer_instance.flush(30)
-        print('Message published successfully.')
+        producer_instance.flush(5)
+        print('Message published to kafka successfully.')
     except Exception as ex:
-        print('Exception in publishing message')
+        print('Exception in publishing to kafka message')
         print(str(ex))
 
 
@@ -23,8 +26,8 @@ def connect_kafka_producer():
     finally:
         return _producer
 
-
-def consume_messages():
+def connect_kafka_consumer(topic_name):
+    _consumer = None
     settings = {
     'bootstrap.servers': 'localhost:9092',
     'group.id': 'mygroup',
@@ -33,10 +36,21 @@ def consume_messages():
     'session.timeout.ms': 6000,
     'default.topic.config': {'auto.offset.reset': 'smallest'}
     }
-    c = Consumer(settings)
-    c.subscribe(['comments'])
-    msgs = c.consume(num_messages=1000000,timeout=5)
+    try:
+        _consumer = Consumer(settings)
+        _consumer.subscribe([topic_name])
+    except Exception as ex:
+        print('Exception while connecting Kafka')
+        print(str(ex))
+    finally:
+        return _consumer
 
+
+def consume_messages(consumer):
+    if consumer is None:
+        print("No consumer")
+        return
+    msgs = consumer.consume(num_messages=1000000,timeout=5)
     json_data_list = []
     for msg in msgs:
         print(msg.value()) 
@@ -44,7 +58,6 @@ def consume_messages():
         data = json.loads(my_json)
         json_data_list.append(data)
     
-    if c is not None:
-        c.close()
+    consumer.close()
 
-    return jsonify(json_data_list)
+    return jsonify(new_comments=json_data_list)

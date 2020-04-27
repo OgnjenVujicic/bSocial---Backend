@@ -3,7 +3,7 @@ from datetime import datetime
 from bSocial import app, db, argon2
 from bSocial.models import User, Post, Comment, Followers
 from sqlalchemy import exc
-from bSocial.kafka_service import connect_kafka_producer, publish_message,consume_messages
+from bSocial.kafka_service import connect_kafka_producer, publish_message,connect_kafka_consumer, consume_messages
 
 
 def except_msg(e):
@@ -14,14 +14,21 @@ def save_changes(model):
     db.session.add(model)
     db.session.commit()
 
+def send_kafka(topic,key,value):
+    mess_json = json.dumps(value)
+    p = connect_kafka_producer()
+    publish_message(p, topic, key, mess_json)     
+
 def insert_user(data):
     if User.query.filter_by(email = data['email']).first():
         return jsonify({"error": "email already exists"}), 400
     hashed_pass = argon2.generate_password_hash(data['password'])
     user = User(first_name=data['first_name'], last_name=data['last_name'],
-                username=data['username'], email=data['email'], password=hashed_pass)              
+                username=data['username'], email=data['email'], password=hashed_pass)                      
     try:   
         save_changes(user)
+        data['registration_date'] = datetime.utcnow()
+        send_kafka('users','user',data)
         return jsonify({'message': 'registered successfully'})
     except exc.SQLAlchemyError as e:
         return except_msg(e)
@@ -30,6 +37,9 @@ def insert_post(data, current_user):
     try:
         post = Post(title=data['title'], content=data['content'], author=current_user)
         save_changes(post)
+        kafka_message={'username' : current_user.username, 'email' : current_user.email, 'user_id' : current_user.id,
+                        'timestamp' : post.date_time, 'post_id' : post.id, 'content' : post.content}
+        send_kafka('posts','post',kafka_message)                
         return post.serialize
     except exc.SQLAlchemyError as e:
         return except_msg(e)
@@ -42,9 +52,7 @@ def insert_comment(data, current_user):
         kafka_message={'sender_username' : current_user.username, 'sender_email' : current_user.email, 
         'sender_id' : current_user.id, 'timestamp' : datetime.utcnow(), 'post_id' : comment.post_id,
         'comment_id' : comment.id, 'comment_content' : comment.content}
-        mess_json = json.dumps(kafka_message)
-        p = connect_kafka_producer()
-        publish_message(p,'comments','comment',mess_json)
+        send_kafka('comments','comment',kafka_message)
         return comment.serialize
     except exc.SQLAlchemyError as e:
         return except_msg(e)
@@ -85,5 +93,6 @@ def get_feed(current_user,page):
         return except_msg(e)
 
 def get_comments_notifications(current_user):
-    return consume_messages()
+    c = connect_kafka_consumer("comments")
+    return consume_messages(c)
     
