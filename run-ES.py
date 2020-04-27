@@ -9,9 +9,9 @@ if __name__ == '__main__':
         exit()
     logging.basicConfig(level=logging.ERROR)
 
-    th1 = start_consuming_thread("users")
-    th2 = start_consuming_thread("posts")
-    th3 = start_consuming_thread("comments")
+    th1 = start_consuming_thread("users",es)
+    th2 = start_consuming_thread("posts",es)
+    th3 = start_consuming_thread("comments",es)
 
     th1.join()
     th2.join()

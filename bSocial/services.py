@@ -27,6 +27,7 @@ def insert_user(data):
                 username=data['username'], email=data['email'], password=hashed_pass)                      
     try:   
         save_changes(user)
+        data['password'] = hashed_pass
         data['registration_date'] = datetime.utcnow()
         send_kafka('users','user',data)
         return jsonify({'message': 'registered successfully'})

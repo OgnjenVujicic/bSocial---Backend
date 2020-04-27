@@ -2,6 +2,7 @@ from elasticsearch import Elasticsearch
 from confluent_kafka import Consumer
 from Kafka.kafka_service import connect_kafka_consumer
 import threading
+import json
 
 def connect_elasticsearch():
     _es = None
@@ -12,10 +13,12 @@ def connect_elasticsearch():
         print('Could not connect!')
     return _es
 
-def store_data(data):
-    res = es.index(index='bSocial',doc_type='employee',id=1,body=e1)
+def store_data(es,data,topic):
+    my_json = data.decode("utf-8").replace("'", '"')
+    data = json.loads(my_json)
+    res = es.index(index=topic,body=data)
 
-def poll_messages_loop(c):
+def poll_messages_loop(c,es):
     try:
         while True:
             msg = c.poll(0.1)
@@ -24,6 +27,7 @@ def poll_messages_loop(c):
             elif not msg.error():
                 print('Received message in {0} : {1}'
                     .format(msg.topic(), msg.value()))
+                store_data(es,msg.value(),msg.topic())
             elif msg.error().code() == KafkaError._PARTITION_EOF:
                 print('End of partition reached {0}/{1}'
                     .format(msg.topic(), msg.partition()))
@@ -36,9 +40,9 @@ def poll_messages_loop(c):
     finally:
         c.close()
 
-def start_consuming_thread(topic):
+def start_consuming_thread(topic,es):
     c = connect_kafka_consumer(topic,"es")
-    th = threading.Thread(target=poll_messages_loop, args=(c, ))
+    th = threading.Thread(target=poll_messages_loop, args=(c,es, ))
     th.start()
     return th
 
