@@ -3,7 +3,7 @@ from datetime import datetime
 from bSocial import app, db, argon2
 from bSocial.models import User, Post, Comment, Followers
 from sqlalchemy import exc
-from bSocial.kafka_service import connect_kafka_producer, publish_message,connect_kafka_consumer, consume_messages
+from Kafka.kafka_service import connect_kafka_producer, publish_message,connect_kafka_consumer, consume_messages
 
 
 def except_msg(e):
@@ -93,6 +93,6 @@ def get_feed(current_user,page):
         return except_msg(e)
 
 def get_comments_notifications(current_user):
-    c = connect_kafka_consumer("comments")
+    c = connect_kafka_consumer("comments","flask")
     return consume_messages(c)
     

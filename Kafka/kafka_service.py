@@ -26,11 +26,11 @@ def connect_kafka_producer():
     finally:
         return _producer
 
-def connect_kafka_consumer(topic_name):
+def connect_kafka_consumer(topic_name,group):
     _consumer = None
     settings = {
     'bootstrap.servers': 'localhost:9092',
-    'group.id': 'mygroup',
+    'group.id': group,
     'client.id': 'client-1',
     'enable.auto.commit': True,
     'session.timeout.ms': 6000,
@@ -61,3 +61,23 @@ def consume_messages(consumer):
     consumer.close()
 
     return jsonify(new_comments=json_data_list)
+
+def poll_messages_loop(c):
+    try:
+        while True:
+            msg = c.poll(0.1)
+            if msg is None:
+                continue
+            elif not msg.error():
+                print('Received message: {0}'.format(msg.value()))
+            elif msg.error().code() == KafkaError._PARTITION_EOF:
+                print('End of partition reached {0}/{1}'
+                    .format(msg.topic(), msg.partition()))
+            else:
+                print('Error occured: {0}'.format(msg.error().str()))
+
+    except KeyboardInterrupt:
+        pass
+
+    finally:
+        c.close()
