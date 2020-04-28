@@ -28,7 +28,7 @@ def insert_user(data):
     try:   
         save_changes(user)
         data['password'] = hashed_pass
-        data['registration_date'] = datetime.utcnow()
+        data['registration_date'] = datetime.utcnow().strftime('%Y-%m-%d')
         send_kafka('users','user',data)
         return jsonify({'message': 'registered successfully'})
     except exc.SQLAlchemyError as e:
@@ -39,7 +39,7 @@ def insert_post(data, current_user):
         post = Post(title=data['title'], content=data['content'], author=current_user)
         save_changes(post)
         kafka_message={'username' : current_user.username, 'email' : current_user.email, 'user_id' : current_user.id,
-                        'timestamp' : post.date_time, 'post_id' : post.id, 'content' : post.content}
+                        'timestamp' : post.date_time.strftime('%Y-%m-%d %H:%M:%S'), 'post_id' : post.id, 'content' : post.content}
         send_kafka('posts','post',kafka_message)                
         return post.serialize
     except exc.SQLAlchemyError as e:
@@ -51,7 +51,7 @@ def insert_comment(data, current_user):
         comment = Comment(post_id=data['post_id'],content=data['content'])
         save_changes(comment)
         kafka_message={'sender_username' : current_user.username, 'sender_email' : current_user.email, 
-        'sender_id' : current_user.id, 'timestamp' : datetime.utcnow(), 'post_id' : comment.post_id,
+        'sender_id' : current_user.id, 'timestamp' : datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'), 'post_id' : comment.post_id,
         'comment_id' : comment.id, 'comment_content' : comment.content}
         send_kafka('comments','comment',kafka_message)
         return comment.serialize

@@ -5,15 +5,21 @@ import threading
 import json
 
 def connect_elasticsearch():
-    _es = None
     _es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
     if _es.ping():
         print('Connected')
     else:
         print('Could not connect!')
+        _es = None
     return _es
 
+def create_index(es,index_name,mappings):
+    if not es.indices.exists(index_name):
+            es.indices.create(index=index_name, ignore=400, body=mappings)
+            print('Created Index ',index_name)
+
 def store_data(es,data,topic):
+    print("storing...")
     my_json = data.decode("utf-8").replace("'", '"')
     data = json.loads(my_json)
     res = es.index(index=topic,body=data)
