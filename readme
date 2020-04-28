@@ -1,0 +1,7 @@
+To start project:
+
+-Install python requirements: pip install -r requirements.txt 
+-Installed Confluent Kafka and started Zookeeper and Server
+-Installed ElasticSearch and started on port 9200
+-Start flask Rest API by executing file run.py(currently in debug mode)
+-Start microservice for consuming kafka messeges and storing to ES by executing run-ES.py

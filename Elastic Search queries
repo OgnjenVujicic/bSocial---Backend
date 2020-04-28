@@ -1,0 +1,14 @@
+1.
+GET  users/_search
+
+{
+"size":0,
+  "aggs": {
+    "reg_byday": {
+      "date_histogram": {
+        "field": "registration_date",
+        "interval": "day"
+      }
+    }
+  }
+}

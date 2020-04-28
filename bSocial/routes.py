@@ -13,7 +13,7 @@ def data_invalid():
 def token_encode(user):
     token = jwt.encode({
             'email' : user.email,
-            'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=60)
+            'exp' : datetime.datetime.utcnow() + datetime.timedelta(seconds=60)
         }, app.config['SECRET_KEY'])
     return jsonify({'token' : token.decode('UTF-8')})
 

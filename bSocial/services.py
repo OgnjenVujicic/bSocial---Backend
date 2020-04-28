@@ -84,7 +84,7 @@ def get_feed(current_user,page):
 
         posts = Post.query.filter(Post.user_id.in_(ids_incuding_own))\
             .order_by(Post.date_time.desc())\
-            .paginate(page=page,per_page=3)
+            .paginate(page=page,per_page=10)
 
         return jsonify(total=posts.total,total_pages=posts.pages, 
         page=page, next_page=posts.next_num, prev_page=posts.prev_num, 
